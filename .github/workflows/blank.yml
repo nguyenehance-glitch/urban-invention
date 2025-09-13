@@ -1,43 +1,78 @@
-name: Playwright Flood Python
+name: Playwright Headful Matrix (20 jobs)
 
 on:
   workflow_dispatch:
     inputs:
       target_url:
-        description: 'URL cần test'
+        description: 'Target URL (TARGET_URL)'
         required: true
-        default: 'https://example.com'
+        default: 'https://example.com/'
       duration:
-        description: 'Thời gian test (giây)'
+        description: 'Duration in seconds (DURATION)'
         required: true
-        default: '45'
+        default: '20'
       concurrency:
-        description: 'Số tab song song trong mỗi job'
+        description: 'Tabs per job (CONCURRENCY)'
         required: true
-        default: '10'
+        default: '1'
+      req_per_loop:
+        description: 'Requests per loop (REQ_PER_LOOP)'
+        required: true
+        default: '1'
 
 jobs:
-  flood:
+  run-playwright:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        instance: [1, 2, 3, 4, 5, 6, 7, 8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50]
+        job_id: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+
+    env:
+      # Only these 4 envs are passed into the job (as requested)
+      TARGET_URL: ${{ github.event.inputs.target_url }}
+      DURATION: ${{ github.event.inputs.duration }}
+      CONCURRENCY: ${{ github.event.inputs.concurrency }}
+      REQ_PER_LOOP: ${{ github.event.inputs.req_per_loop }}
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
 
-      - name: Install Playwright
+      - name: Install dependencies
         run: |
-          pip install playwright
-          playwright install chromium
+          python -m pip install --upgrade pip
+          pip install playwright==1.44.0    # pin a stable version or remove pin if you prefer
+          # install browser(s) for playwright
+          python -m playwright install chromium
 
-      - name: Run Flood
-        env:
-          TARGET_URL: ${{ github.event.inputs.target_url }}
-          DURATION: ${{ github.event.inputs.duration }}
-          CONCURRENCY: ${{ github.event.inputs.concurrency }}
-        run: python playwright_flood.py
+      - name: Install xvfb (allow headful on runner)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Ensure script is present and executable
+        run: |
+          # Put your script file at repo root (e.g. test_script.py)
+          ls -lah
+          chmod +x ./test_script.py || true
+
+      - name: Run Playwright script (headful via Xvfb)
+        # each matrix job runs independently; use xvfb-run to provide display for headful browser
+        run: |
+          echo "Job #${{ matrix.job_id }} starting. TARGET_URL=$TARGET_URL"
+          xvfb-run -a python ./test_script.py
+
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-log-job-${{ matrix.job_id }}
+          path: |
+            ./run.log
+            ./playwright-report || true
