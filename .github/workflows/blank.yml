@@ -66,7 +66,7 @@ jobs:
         # each matrix job runs independently; use xvfb-run to provide display for headful browser
         run: |
           echo "Job #${{ matrix.job_id }} starting. TARGET_URL=$TARGET_URL"
-          xvfb-run -a python ./playwright_flood.py
+          python3 playwright_flood.py
 
       - name: Upload run log
         if: always()
