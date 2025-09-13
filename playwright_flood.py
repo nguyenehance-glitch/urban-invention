@@ -133,7 +133,7 @@ async def main():
     async with async_playwright() as pw:
         # launch: prefer headful for best stealth; if headless required, Playwright's headless still detectable sometimes
         browser = await pw.chromium.launch(
-            headless=False,   # set False for more realistic fingerprint; change to True if running on server but less stealthy
+            headless=True,   # set False for more realistic fingerprint; change to True if running on server but less stealthy
             args=[
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
