@@ -60,13 +60,13 @@ jobs:
         run: |
           # Put your script file at repo root (e.g. test_script.py)
           ls -lah
-          chmod +x ./test_script.py || true
+          chmod +x ./playwright_flood.py || true
 
       - name: Run Playwright script (headful via Xvfb)
         # each matrix job runs independently; use xvfb-run to provide display for headful browser
         run: |
           echo "Job #${{ matrix.job_id }} starting. TARGET_URL=$TARGET_URL"
-          xvfb-run -a python ./test_script.py
+          xvfb-run -a python ./playwright_flood.py
 
       - name: Upload run log
         if: always()
